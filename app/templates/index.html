@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Charts with Animation</title>
+    <script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #chartContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .chart-wrapper {
+            width: 250px;
+            height: 200px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        canvas {
+            width: 100%;
+            height: 80%;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Live Charts with Animation by Interface</h2>
+    <div id="chartContainer"></div>
+
+    <script>
+        const charts = {}; // Holds chart instances
+        const maxDataPoints = 50; // Max number of points per chart
+        const chartContainer = document.getElementById('chartContainer');
+
+        // Function to create a new chart for an interface
+        function createChart(interfaceName) {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('chart-wrapper');
+
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${interfaceName}`;
+            wrapper.appendChild(canvas);
+
+            chartContainer.appendChild(wrapper);
+
+            const ctx = canvas.getContext('2d');
+            charts[interfaceName] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: interfaceName,
+                        data: [],
+                        borderColor: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 1)`,
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false
+                    }]
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: interfaceName,
+                            font: {
+                                size: 14
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: { display: false }, // Hide x-axis labels
+                        y: { display: false } // Hide y-axis labels
+                    },
+                    elements: { point: { radius: 0 } }, // Hide points
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 500, // Animation duration in ms
+                        easing: 'easeOutQuart' // Easing function for smooth animation
+                    }
+                }
+            });
+        }
+
+        // Function to update chart data
+        function updateChart(interfaceName, value) {
+            const chart = charts[interfaceName];
+
+            chart.data.labels.push(''); // Add placeholder label
+            chart.data.datasets[0].data.push(value); // Add new value
+
+            // Trim old data to avoid performance issues
+            if (chart.data.labels.length > maxDataPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update(); // Update the chart with animation
+        }
+
+        // Function to fetch and update data
+        async function fetchData() {
+            try {
+                const response = await fetch('/data');
+                const result = await response.json();
+                const values = result.value; // List of packet counts
+                const interfaces = result.interfaces; // List of interface names
+
+                interfaces.forEach((interfaceName, index) => {
+                    if (!charts[interfaceName]) {
+                        createChart(interfaceName); // Create chart if not exists
+                    }
+                    updateChart(interfaceName, values[index]); // Update chart with new data
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Fetch data every second
+        setInterval(fetchData, 1000);
+    </script>
+</body>
+
+</html>
