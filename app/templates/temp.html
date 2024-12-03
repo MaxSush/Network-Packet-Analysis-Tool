@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Charts in Cards</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .card {
+            margin: 15px;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: scale(1.03);
+        }
+
+        #chartContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card canvas {
+            height: 200px !important;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <div class="alert alert-primary" role="alert" style="background-color: #7cbad8;">
+                <h1>Welcome to Far_Annoyed</h1>
+            </div>
+        </div>
+
+        <div id="chartContainer" class="row"></div>
+    </div>
+
+    <script>
+        const charts = {}; // Holds chart instances
+        const maxDataPoints = 50; // Max number of points per chart
+        const chartContainer = document.getElementById('chartContainer');
+
+        // Function to create a card for each chart
+        function createCard(interfaceName) {
+            const col = document.createElement('div');
+            col.className = "col-md-4";
+
+            // Create a clickable card (wrap in <a>)
+            const link = document.createElement('a');
+            link.href = `/interface/${interfaceName}`; // Redirect to interface-specific page
+            link.target = "_blank"; // Open in a new tab
+
+            const card = document.createElement('div');
+            card.className = "card";
+
+            const cardBody = document.createElement('div');
+            cardBody.className = "card-body";
+
+            const title = document.createElement('h5');
+            title.className = "card-title text-center";
+            title.textContent = interfaceName;
+
+            const canvas = document.createElement('canvas');
+            canvas.id = `chart-${interfaceName}`;
+
+            cardBody.appendChild(title);
+            cardBody.appendChild(canvas);
+            card.appendChild(cardBody);
+            link.appendChild(card);
+            col.appendChild(link);
+            chartContainer.appendChild(col);
+
+            const ctx = canvas.getContext('2d');
+            charts[interfaceName] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: new Array(50).fill(1),
+                    datasets: [{
+                        label: interfaceName,
+                        data: [0,],
+                        borderColor: `rgba(0, 0, 0, 1)`,
+                        borderWidth: 2,
+                        tension: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { display: false }, // Hide x-axis labels
+                        y: { display: false } // Hide y-axis labels
+                    },
+                    elements: { point: { radius: 0 } }, // Hide points
+                    maintainAspectRatio: false,
+                    animation: false
+                }
+            });
+        }
+
+        // Function to update chart data
+        function updateChart(interfaceName, value) {
+            const chart = charts[interfaceName];
+            chart.data.datasets[0].data.push(value); // Add new value
+
+            // Trim old data to avoid performance issues
+            if (chart.data.datasets[0].data.length > maxDataPoints) {
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update(); // Update the chart with animation
+        }
+
+        // Function to fetch and update data
+        async function fetchData() {
+            try {
+                const response = await fetch('/data');
+                const result = await response.json();
+                const values = result.value; // List of packet counts
+                const interfaces = result.interfaces; // List of interface names
+
+                interfaces.forEach((interfaceName, index) => {
+                    if (!charts[interfaceName]) {
+                        createCard(interfaceName); // Create card and chart if not exists
+                    }
+                    updateChart(interfaceName, values[index]); // Update chart with new data
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Fetch data every second
+        setInterval(fetchData, 1000);
+
+    </script>
+</body>
+
+</html>
