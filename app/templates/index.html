@@ -109,8 +109,15 @@
                     </li>
                     <li>
                         <div class="form-check">
+                            <input class="form-check-input filter-checkbox" type="checkbox" value="ICMP" id="filter-tcp"
+                                aria-label="Filter ICMP Only">
+                            <label class=" form-check-label" for="filter-tcp">ICMP Only</label>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="form-check">
                             <input class="form-check-input filter-checkbox" type="checkbox" value="ARP" id="filter-arp">
-                            <label class="form-check-label" for="filter-arp">ARP</label>
+                            <label class="form-check-label" for="filter-arp">ARP Only</label>
                         </div>
                     </li>
                     <li>
@@ -125,6 +132,18 @@
                         <input type="number" class="form-control" id="portInput" placeholder="e.g., 80" min="1"
                             max="65535">
                         <span id="portError" class="text-danger"></span>
+                    </li>
+                    <li>
+                        <div class="form-check">
+                            <input class="form-check-input filter-checkbox" type="checkbox" value="Specific Host"
+                                id="filter-specific-host">
+                            <label class="form-check-label" for="filter-specific-host">Specific IPV4 Host</label>
+                        </div>
+                    </li>
+                    <li class="host-input" id="hostInputContainer" style="display: none;">
+                        <label for="hostInput" class="form-label">Enter Host:</label>
+                        <input type="number" class="form-control" id="hostInput" placeholder="e.g., 127.0.0.1">
+                        <span id="hostError" class="text-danger"></span>
                     </li>
                 </ul>
             </div>
@@ -143,6 +162,28 @@
     <script>
         // for filters
         const MAX_PORT = 65535;
+
+        // Show/Hide the host input field based on the checkbox
+        document.getElementById('filter-specific-host').addEventListener('change', function () {
+            const hostInputContainer = document.getElementById('hostInputContainer');
+            hostInputContainer.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Validate the IPv4 address
+        document.getElementById("hostInput").addEventListener("input", function () {
+            const hostInput = document.getElementById("hostInput");
+            const hostError = document.getElementById("hostError");
+
+            const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$/;
+
+            if (hostInput.value === "") {
+                hostError.textContent = ""; // Clear error for empty input
+            } else if (!ipv4Regex.test(hostInput.value)) {
+                hostError.textContent = "Invalid IPv4 address. Please enter a valid address.";
+            } else {
+                hostError.textContent = ""; // Clear error if valid
+            }
+        });
 
         // Show/hide the specific port input field
         document.getElementById('filter-specific-port').addEventListener('change', function () {

@@ -2,42 +2,73 @@ import atexit
 from flask import Blueprint, render_template, jsonify, request
 
 from app.getpackets import GetPacket, get_interface
+from app.interface import Interface_Packet
 
-main = Blueprint('main', __name__)
+main = Blueprint("main", __name__)
 
-obj = []
-interfaces = get_interface() 
-for i in interfaces:
-    obj.append(GetPacket(interface=i))
-interfaces.append("any")
 
-@main.route('/')
+pckt_obj: dict[str, GetPacket] = {}
+iface_obj: dict[str, Interface_Packet] = {}
+
+interfaces = get_interface()
+
+
+@main.route("/")
 def index():
-    return render_template('index.html')
+    if not pckt_obj:
+        for i in interfaces:
+            print(f"Starting packet capture for {i}...")
+            pckt_obj[i] = GetPacket(i)
+        interfaces.append("any")
+    return render_template("index.html")
 
-@main.route('/data')
+
+@main.route("/data")
 def data():
     results = []
     total_packets = 0
-    for o in obj:
+    for o in pckt_obj.values():
         packets = o.get_packets_sum()
         total_packets += packets
         results.append(packets)
         o.reset_result()
     results.append(total_packets)
-    return jsonify({'interfaces': interfaces, 'value': results})
+    return jsonify({"interfaces": interfaces, "value": results})
 
-@main.route('/interface/<interface_name>', methods=['GET'])
+
+@main.route("/interface/<interface_name>", methods=["GET"])
 def interface_page(interface_name):
-    filters = request.args.get('filters', 'None')
-    return f"Showing details for interface {interface_name} with filters: {filters}"
+    filters = request.args.get("filters", "None")
+    if interface_name not in iface_obj:
+        for obj in iface_obj.values():
+            print(f"Stopping filter packet capture for {obj.interface}...")
+            print("Wait 20 sec...")
+            obj.stop()
+            print("Stopped")
+        iface_obj.clear()
+        print(f"Starting filter packet capture for {interface_name}...")
+        iface_obj[interface_name] = Interface_Packet(filters, interface_name)
+    iface_obj[interface_name].packets_list.clear()
+    return render_template("interface.html", interface_name=interface_name)
 
-@main.route('/new')
-def new():
-    return render_template('new.html')
+
+@main.route("/packets/<interface_name>")
+def get_packets(interface_name):
+    packet_list = []
+    if interface_name in iface_obj:
+        packet_list = iface_obj[interface_name].get_packets_list()
+    return jsonify(packet_list)
+
 
 @atexit.register
 def cleanup():
-    for o in obj:
+    for o in pckt_obj.values():
         o.stop()
         print(f"Stopping packet capture for {o.interface}...")
+    pckt_obj.clear()
+    for o in iface_obj.values():
+        print(f"Stopping filter packet capture for {o.interface}...")
+        print("Wait 20 sec...")
+        o.stop()
+        print("Stopped")
+    iface_obj.clear()

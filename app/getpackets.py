@@ -2,13 +2,15 @@ from scapy.all import *
 import threading
 import time
 
+
 def get_interface():
     interface = get_if_list()
     for i in interface:
         ipaddr = get_if_addr(i)
-        if (ipaddr == '0.0.0.0'):
+        if ipaddr == "0.0.0.0":
             interface.remove(i)
     return interface
+
 
 class GetPacket:
     def __init__(self, interface):
@@ -32,9 +34,6 @@ class GetPacket:
         with self.lock:
             return self.result
 
-    def is_alive(self):
-        return self.worker_thread.is_alive()
-    
     def process_packet(self, packet):
         with self.lock:
             self.result += 1
@@ -42,21 +41,24 @@ class GetPacket:
     def __capture_packets(self):
         while self.running:
             try:
-                sniff(iface=self.interface, prn=self.process_packet, store=False, timeout=1)
+                sniff(iface=self.interface, prn=self.process_packet, store=0, timeout=1)
             except PermissionError:
-                print("PermissionError: [Errno 1] Operation not permitted. Run with sudo.")
+                print(
+                    "PermissionError: [Errno 1] Operation not permitted. Run with sudo."
+                )
                 self.running = False
                 break
             except OSError:
                 print(f"Stoping packet sniffing for {self.interface}...")
-                time.sleep(5)
+                time.sleep(10)
             except Exception as e:
                 print(f"Error capturing packets: {e}")
-                time.sleep(5)
+                time.sleep(10)
 
 
 if __name__ == "__main__":
-    interface_name = get_interface()[0][1]
+    interface_name = get_interface()[0]
+    print(interface_name)
     obj = GetPacket(interface_name)
     try:
         while True:

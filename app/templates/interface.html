@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Viewer</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Packet Viewer</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Protocol</th>
+                <th>Length</th>
+                <th>Info</th>
+            </tr>
+        </thead>
+        <tbody id="packets-table">
+            <!-- Rows will be dynamically added here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Function to fetch packets from the server
+        async function fetchPackets() {
+            const response = await fetch("/packets/{{interface_name}}");
+            const packets = await response.json();
+
+            const tableBody = document.getElementById("packets-table");
+            tableBody.innerHTML = ""; // Clear the table
+
+            let index = 1;
+            for (let i = packets.length - 1; i >= 0; i--) {
+                const packet = packets[i];
+                const row = `<tr>
+                    <td>${index++}</td>
+                    <td>${packet.src}</td>
+                    <td>${packet.dst}</td>
+                    <td>${packet.proto}</td>
+                    <td>${packet.length}</td>
+                    <td>${packet.summary}</td>
+                    </tr>`;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            }
+
+        }
+
+        // Fetch packets every 2 seconds
+        setInterval(fetchPackets, 2000);
+    </script>
+</body>
+
+</html>
