@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Packet Viewer</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         table {
             width: 100%;
@@ -25,7 +27,32 @@
 </head>
 
 <body>
-    <h1>Packet Viewer</h1>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Packet Viewer</a>
+
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <button class="btn btn-danger" id="stopBtn" title="Stop" onclick="handleStop()">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item mx-2">
+                        <button id="playPauseBtn" class="btn btn-success" title="Play/Pause" onclick="togglePlayPause()">
+                            <i class="fas fa-pause"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-primary" id="downloadBtn" title="Download"
+                            onclick="sendToBackend('download')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
     <table>
         <thead>
             <tr>
@@ -43,6 +70,50 @@
     </table>
 
     <script>
+
+        let isPlaying = false;
+        function togglePlayPause() {
+            const button = document.getElementById("playPauseBtn");
+            isPlaying = !isPlaying;
+
+            if (isPlaying) {
+                button.innerHTML = '<i class="fas fa-play"></i>';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-warning');
+                sendToBackend('pause');
+            } else {
+                button.innerHTML = '<i class="fas fa-pause"></i>';
+                button.classList.remove('btn-warning');
+                button.classList.add('btn-success');
+                sendToBackend('play');
+            }
+        }
+        function handleStop() {
+            // Disable the Play/Pause button
+            const playPauseBtn = document.getElementById("playPauseBtn");
+            playPauseBtn.disabled = true;
+            playPauseBtn.classList.add('disabled');
+
+            // Send stop action to backend
+            sendToBackend('stop');
+        }
+        function sendToBackend(action) {
+            fetch('/action/{{interface_name}}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: action }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
         // Function to fetch packets from the server
         async function fetchPackets() {
             const response = await fetch("/packets/{{interface_name}}");
@@ -55,13 +126,13 @@
             for (let i = packets.length - 1; i >= 0; i--) {
                 const packet = packets[i];
                 const row = `<tr>
-                    <td>${index++}</td>
-                    <td>${packet.src}</td>
-                    <td>${packet.dst}</td>
-                    <td>${packet.proto}</td>
-                    <td>${packet.length}</td>
-                    <td>${packet.summary}</td>
-                    </tr>`;
+                            <td>${index++}</td>
+                            <td>${packet.src}</td>
+                            <td>${packet.dst}</td>
+                            <td>${packet.proto}</td>
+                            <td>${packet.length}</td>
+                            <td>${packet.summary}</td>
+                            </tr>`;
                 tableBody.insertAdjacentHTML('beforeend', row);
             }
 

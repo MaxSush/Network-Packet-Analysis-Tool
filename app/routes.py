@@ -9,6 +9,7 @@ main = Blueprint("main", __name__)
 
 pckt_obj: dict[str, GetPacket] = {}
 iface_obj: dict[str, Interface_Packet] = {}
+packet_list: list[dict] = []
 
 interfaces = get_interface()
 
@@ -52,9 +53,29 @@ def interface_page(interface_name):
     return render_template("interface.html", interface_name=interface_name)
 
 
+@main.route("/action/<interface_name>", methods=["POST"])
+def handle_action(interface_name):
+    data = request.json
+    action = data.get("action")
+    print(f"Received action: {action}")
+    if action == "pause":
+        iface_obj[interface_name].control_running = False
+    if action == "play":
+        iface_obj[interface_name].control_running = True
+    if action == "download":
+        print("download")
+    if action == "stop":
+        print(f"Stopping filter packet capture for {o.interface}...")
+        print("Wait 20 sec...")
+        iface_obj[interface_name].stop()
+        iface_obj.clear()
+        print("Stopped")
+    return jsonify({"status": "success", "action": action})
+
+
 @main.route("/packets/<interface_name>")
 def get_packets(interface_name):
-    packet_list = []
+    global packet_list
     if interface_name in iface_obj:
         packet_list = iface_obj[interface_name].get_packets_list()
     return jsonify(packet_list)

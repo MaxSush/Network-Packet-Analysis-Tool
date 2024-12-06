@@ -19,6 +19,7 @@ proto_dict = {
 class Interface_Packet:
     def __init__(self, filter, interface):
         self.running = True
+        self.control_running = True
         self.interface = interface
         self.packets_list = []
         self.lock = threading.Lock()
@@ -41,7 +42,7 @@ class Interface_Packet:
             packet_info = {
                 "src": (getattr(pckt.payload, "src", pckt.src)),
                 "dst": (getattr(pckt.payload, "dst", pckt.dst)),
-                "proto": (getattr(pckt, "proto", "N/A")),
+                "proto": proto_dict.get(getattr(pckt, "proto", None), "N/A"),
                 "length": (getattr(pckt, "len", len(pckt))),
                 "summary": pckt.summary(),
             }
@@ -53,18 +54,24 @@ class Interface_Packet:
 
     def __capture_filter_packets(self, filter, interface):
         def stop_sniffing(pckt):
-            return not self.running
+            return not self.control_running
+
         while self.running:
             try:
-                sniff(
-                    iface=interface,
-                    prn=self.process_pckt,
-                    store=0,
-                    timeout=20,
-                    stop_filter=stop_sniffing,
-                )
+                if self.control_running:
+                    sniff(
+                        iface=interface,
+                        prn=self.process_pckt,
+                        store=0,
+                        timeout=20,
+                        stop_filter=stop_sniffing,
+                    )
+                else:
+                    time.sleep(4)
             except PermissionError:
-                print("PermissionError: [Errno 1] Operation not permitted. Run with sudo.")
+                print(
+                    "PermissionError: [Errno 1] Operation not permitted. Run with sudo."
+                )
                 self.running = False
             except Exception as e:
                 print(f"Error capturing packets: {e}")
