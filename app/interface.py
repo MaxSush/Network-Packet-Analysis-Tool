@@ -1,6 +1,7 @@
 from scapy.all import *
 import threading
 import time
+import os
 
 proto_dict = {
     143: "Ethernet",
@@ -21,10 +22,16 @@ class Interface_Packet:
         self.running = True
         self.control_running = True
         self.interface = interface
+        self.filter = filter
         self.packets_list = []
+        os.makedirs("app/tmp", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"{interface}_{timestamp}.pcap"
+        self.file_path = os.path.join("app/tmp", file_name)
+        print(self.file_path)
         self.lock = threading.Lock()
         self.worker_thread = threading.Thread(
-            target=self.__capture_filter_packets, args=(filter, interface)
+            target=self.__capture_filter_packets, args=(self.interface,)
         )
         self.worker_thread.daemon = True
         self.worker_thread.start()
@@ -50,16 +57,19 @@ class Interface_Packet:
             if len(self.packets_list) > 100:
                 self.packets_list.pop(0)
 
-            # wrpcap("tmp/temp.pcap", pckt, append=True)
+            wrpcap(self.file_path, pckt, append=True)
 
-    def __capture_filter_packets(self, filter, interface):
+    def __capture_filter_packets(self, interface):
         def stop_sniffing(pckt):
             return not self.control_running
 
         while self.running:
             try:
                 if self.control_running:
+                    print(f"Using filter: {self.filter}")
+                    print(f"Interface: {interface}")
                     sniff(
+                        filter=self.filter,
                         iface=interface,
                         prn=self.process_pckt,
                         store=0,
@@ -79,13 +89,15 @@ class Interface_Packet:
 
     def stop(self):
         self.running = False
+        self.control_running = False
         if self.worker_thread.is_alive():
-            self.worker_thread.join()
+            self.worker_thread.join(timeout=20)
+            time.sleep(1)
 
 
 if __name__ == "__main__":
     interface_name = "lo"
-    filter = None
+    filter = ""
     obj = Interface_Packet(filter, interface_name)
     try:
         while True:
@@ -96,3 +108,4 @@ if __name__ == "__main__":
         print("\nStopping packet capture...")
         obj.stop()
         print("\nStopped packet capture...")
+        print("Active threads:", threading.enumerate())

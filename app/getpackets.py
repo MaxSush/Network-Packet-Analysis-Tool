@@ -26,6 +26,7 @@ class GetPacket:
         self.running = False
         if self.worker_thread.is_alive():
             self.worker_thread.join()
+            time.sleep(1)
 
     def reset_result(self):
         self.result = 0

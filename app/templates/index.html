@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,17 +11,33 @@
         crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .card {
+            margin: 15px;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card-title {
+            font-weight: bold;
+            color: #343a40;
+        }
+
         .dropdown-menu {
             max-height: 300px;
             overflow-y: auto;
-            padding-left: 20px;
-            padding-right: 20px;
-            /* Add padding inside the dropdown menu */
+            padding: 20px;
         }
 
-        .port-input {
+        .port-input,
+        .host-input {
             display: none;
-            /* Hidden by default */
             margin-top: 10px;
         }
 
@@ -30,35 +45,10 @@
         input[type="number"]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
-            /* Remove number increment/decrement buttons */
         }
 
         input[type="number"] {
             -moz-appearance: textfield;
-            /* For Firefox */
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        .card {
-            margin: 15px;
-            padding: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .card-title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card:hover {
-            transform: scale(1.03);
         }
 
         #chartContainer {
@@ -75,88 +65,110 @@
             text-decoration: none;
             color: inherit;
         }
+
+        .alert {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .badge {
+            font-size: 1rem;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <div class="container py-5">
+        <!-- Welcome Banner -->
         <div class="text-center mb-4">
-            <div class="alert alert-primary" role="alert" style="background-color: #7cbad8;">
-                <h1>Welcome to Far_Annoyed</h1>
+            <div class="alert alert-primary" role="alert">
+                <h1 class="display-4">Welcome to Far_Annoyed</h1>
             </div>
         </div>
 
-        <div class="container mt-5">
-            <h3>Select Filters:</h3>
-            <div class="dropdown">
-                <button class="btn btn-primary dropdown-toggle" type="button" id="filterDropdownButton"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                    Select Filters
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="filterDropdownButton">
-                    <li>
-                        <div class="form-check">
-                            <input class="form-check-input filter-checkbox" type="checkbox" value="TCP" id="filter-tcp"
-                                aria-label="Filter TCP Only">
-                            <label class=" form-check-label" for="filter-tcp">TCP Only</label>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="form-check">
-                            <input class="form-check-input filter-checkbox" type="checkbox" value="UDP" id="filter-udp">
-                            <label class="form-check-label" for="filter-udp">UDP Only</label>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="form-check">
-                            <input class="form-check-input filter-checkbox" type="checkbox" value="ICMP" id="filter-tcp"
-                                aria-label="Filter ICMP Only">
-                            <label class=" form-check-label" for="filter-tcp">ICMP Only</label>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="form-check">
-                            <input class="form-check-input filter-checkbox" type="checkbox" value="ARP" id="filter-arp">
-                            <label class="form-check-label" for="filter-arp">ARP Only</label>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="form-check">
-                            <input class="form-check-input filter-checkbox" type="checkbox" value="Specific Port"
-                                id="filter-specific-port">
-                            <label class="form-check-label" for="filter-specific-port">Specific Port</label>
-                        </div>
-                    </li>
-                    <li class="port-input" id="portInputContainer">
-                        <label for="portInput" class="form-label">Enter Port:</label>
-                        <input type="number" class="form-control" id="portInput" placeholder="e.g., 80" min="1"
-                            max="65535">
-                        <span id="portError" class="text-danger"></span>
-                    </li>
-                    <li>
-                        <div class="form-check">
-                            <input class="form-check-input filter-checkbox" type="checkbox" value="Specific Host"
-                                id="filter-specific-host">
-                            <label class="form-check-label" for="filter-specific-host">Specific IPV4 Host</label>
-                        </div>
-                    </li>
-                    <li class="host-input" id="hostInputContainer" style="display: none;">
-                        <label for="hostInput" class="form-label">Enter Host:</label>
-                        <input type="number" class="form-control" id="hostInput" placeholder="e.g., 127.0.0.1">
-                        <span id="hostError" class="text-danger"></span>
-                    </li>
-                </ul>
-            </div>
+        <!-- Filters Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-body">
+                <h3 class="card-title">Select Filters</h3>
+                <div class="dropdown mb-3">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="filterDropdownButton"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        Choose Filters
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="filterDropdownButton">
+                        <li>
+                            <div class="form-check px-3">
+                                <input class="form-check-input filter-checkbox" type="checkbox" value="TCP"
+                                    id="filter-tcp">
+                                <label class="form-check-label" for="filter-tcp">TCP Only</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check px-3">
+                                <input class="form-check-input filter-checkbox" type="checkbox" value="UDP"
+                                    id="filter-udp">
+                                <label class="form-check-label" for="filter-udp">UDP Only</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check px-3">
+                                <input class="form-check-input filter-checkbox" type="checkbox" value="ICMP"
+                                    id="filter-icmp">
+                                <label class="form-check-label" for="filter-icmp">ICMP Only</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class=" form-check px-3">
+                                <input class="form-check-input filter-checkbox" type="checkbox" value="ARP"
+                                    id="filter-arp">
+                                <label class="form-check-label" for="filter-arp">ARP Only</label>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="form-check px-3">
+                                <input class="form-check-input filter-checkbox" type="checkbox" value="Specific Port"
+                                    id="filter-specific-port">
+                                <label class="form-check-label" for="filter-specific-port">Specific Port</label>
+                            </div>
+                        </li>
+                        <li class="px-3 port-input" id="portInputContainer" style="display: none;">
+                            <label for="portInput" class="form-label mt-2">Enter Port:</label>
+                            <input type="number" class="form-control" id="portInput" placeholder="e.g., 80" min="1"
+                                max="65535">
+                            <span id="portError" class="text-danger"></span>
+                        </li>
+                        <li>
+                            <div class="form-check px-3">
+                                <input class="form-check-input filter-checkbox" type="checkbox" value="Specific Host"
+                                    id="filter-specific-host">
+                                <label class="form-check-label" for="filter-specific-host">Specific IPV4 Host</label>
+                            </div>
+                        </li>
+                        <li class="px-3 host-input" id="hostInputContainer" style="display: none;">
+                            <label for="hostInput" class="form-label mt-2">Enter Host:</label>
+                            <input type="text" class="form-control" id="hostInput" placeholder="e.g., 127.0.0.1">
+                            <span id="hostError" class="text-danger"></span>
+                        </li>
+                    </ul>
+                </div>
 
-            <button class="btn btn-success mt-3" onclick="applyFilters()">Apply Filters</button>
-            <div class="mt-3">
-                <strong>Selected Filters:</strong>
-                <span id="selectedFilters">None</span>
+                <button class="btn btn-success mt-3" onclick="applyFilters()">Apply Filters</button>
+                <div class="mt-3">
+                    <strong>Selected Filters:</strong>
+                    <span id="selectedFilters" class="badge bg-secondary">None</span>
+                </div>
             </div>
         </div>
 
-
-        <div id="chartContainer" class="row"></div>
+        <!-- Chart Section -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title">Select Interface</h3>
+                <div id="chartContainer" class="row mt-4">
+                    <!-- Chart content will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -166,8 +178,13 @@
         // Show/Hide the host input field based on the checkbox
         document.getElementById('filter-specific-host').addEventListener('change', function () {
             const hostInputContainer = document.getElementById('hostInputContainer');
-            hostInputContainer.style.display = this.checked ? 'block' : 'none';
-        });
+            if (this.checked) {
+                hostInputContainer.style.display = 'block';
+            } else {
+                hostInputContainer.style.display = 'none';
+                document.getElementById('hostInput').value = ''; // Clear the input
+            }
+        })
 
         // Validate the IPv4 address
         document.getElementById("hostInput").addEventListener("input", function () {
@@ -193,31 +210,36 @@
 
         function applyFilters() {
             const selectedFilters = [];
-            const checkboxes = document.querySelectorAll('.filter-checkbox');
-            const specificPortInput = document.getElementById('portInput');
-            const portValue = specificPortInput.value.trim();
+            const checkboxes = document.querySelectorAll('.filter-checkbox:checked');
 
             checkboxes.forEach((checkbox) => {
-                if (checkbox.checked) {
-                    if (checkbox.value === 'Specific Port') {
-                        const portNumber = parseInt(portValue, 10);
-                        if (portNumber >= 1 && portNumber <= MAX_PORT) {
-                            selectedFilters.push(`Port ${portNumber}`);
-                            portError.textContent = '';
-                        } else {
-                            portError.textContent = `Please enter a valid port number (1-${MAX_PORT}).`;
-                        }
+                const value = checkbox.value;
+                if (value === 'Specific Host') {
+                    const hostInput = document.getElementById('hostInput').value.trim();
+                    if (hostInput) {
+                        selectedFilters.push(`host ${hostInput}`);
                     } else {
-                        selectedFilters.push(checkbox.value);
+                        document.getElementById('hostError').textContent = 'Please enter a valid IPv4 address.';
                     }
+                } else if (value === 'Specific Port') {
+                    const portInput = document.getElementById('portInput').value.trim();
+                    if (portInput) {
+                        selectedFilters.push(`port ${portInput}`);
+                    } else {
+                        document.getElementById('portError').textContent = 'Please enter a valid port.';
+                    }
+                } else {
+                    selectedFilters.push(value);
                 }
             });
 
             // Display selected filters
-            document.getElementById('selectedFilters').textContent =
-                selectedFilters.length > 0 ? selectedFilters.join(', ') : 'None';
+            const selectedFiltersContainer = document.getElementById('selectedFilters');
+            selectedFiltersContainer.textContent = selectedFilters.length
+                ? selectedFilters.join(', ')
+                : 'None';
 
-            return selectedFilters;
+            return selectedFilters
         }
         // For charts 
         const charts = {}; // Holds chart instances
