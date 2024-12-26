@@ -9,14 +9,14 @@ def list_to_bpf(filter_list):
     for filter in filter_list:
         filter = filter.strip().lower()
 
-        if filter in ["tcp", "udp", "icmp", "arp"]:  # Standard protocols
+        if filter in ["tcp", "udp", "icmp", "arp"]: 
             bpf_parts.append(filter)
-        elif filter.startswith("host "):  # Host filter (e.g., 'host 192.168.1.10')
+        elif filter.startswith("host "):  
             host = filter
-        elif filter.startswith("port "):  # Port filter (e.g., 'port 80')
+        elif filter.startswith("port "): 
             port = filter
         else:
-            bpf_parts.append(filter)  # Add custom filters as-is
+            bpf_parts.append(filter)  
 
     if host and port:
         bpf_parts.append(f"{host} and {port}")

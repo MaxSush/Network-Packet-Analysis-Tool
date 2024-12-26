@@ -6,8 +6,9 @@ from urllib.parse import unquote
 from flask import Blueprint, render_template, jsonify, request, send_file
 
 from app.Utility.BPF_Syntax import list_to_bpf
-from app.getpackets import GetPacket, get_interface
-from app.interface import Interface_Packet
+from app.Utility.getpackets import GetPacket, get_interface
+from app.Utility.interface import Interface_Packet
+from app.Utility.pckt_reader import Pckt_Reader
 
 main = Blueprint("main", __name__)
 
@@ -16,6 +17,7 @@ iface_obj: dict[str, Interface_Packet] = {}
 packet_list: list[dict] = []
 tmp_dir = Path(__file__).resolve().parent / "tmp"
 interfaces = get_interface()
+packet_reader = None
 
 
 @main.route("/")
@@ -41,6 +43,47 @@ def data():
     return jsonify({"interfaces": interfaces, "value": results})
 
 
+@main.route("/upload", methods=["POST"])
+def upload():
+    print("Files received:", request.files)
+    print("Form data received:", request.form)
+    if "pcapFile" not in request.files:
+        return jsonify({"error": "No file found"}), 400
+    file = request.files["pcapFile"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+    if file and (file.filename.endswith(".pcapng") or file.filename.endswith(".pcap")):
+        filename = f"{tmp_dir}/hello.pcap"
+        print(filename)
+        file.save(filename)
+        global packet_reader
+        packet_reader = Pckt_Reader(filename)
+        return jsonify({"message": "File uploaded successfully"}), 200
+    return jsonify({"error": "Invalid file format"}), 400
+
+
+@main.route("/reader")
+def reader():
+    if packet_reader is None:
+        return render_template(
+            "index.html", error="No file uploaded. Please upload a PCAP file."
+        )
+    return render_template("reader.html")
+
+
+@main.route("/get-packets-details", methods=["GET"])
+def get_packets_details():
+    if packet_reader == None:
+        return jsonify({"error": "No reader object created"}), 400
+    page = int(request.args.get("page", 1))  # Current page
+    data = packet_reader.get_pktset(page)  # Fetch data using Pckt_Reader
+    if isinstance(data, str):  # If invalid index, return error
+        return jsonify({"error": data}), 400
+    total_packets = len(packet_reader.pkts)
+    total_pages = (total_packets + 99) // 100  # Calculate total pages
+    return jsonify({"packets": data, "totalPages": total_pages})
+
+
 @main.route("/interface/<interface_name>", methods=["GET"])
 def interface_page(interface_name):
     filters = request.args.get("filters", "None")
@@ -60,7 +103,7 @@ def interface_page(interface_name):
     iface_obj[interface_name].control_running = True
     iface_obj[interface_name].filter = bpf
     iface_obj[interface_name].packets_list.clear()
-    return render_template("interface.html", interface_name=interface_name, filters = bpf)
+    return render_template("interface.html", interface_name=interface_name, filters=bpf)
 
 
 @main.route("/action/<interface_name>", methods=["POST"])
@@ -74,7 +117,7 @@ def handle_action(interface_name):
         iface_obj[interface_name].control_running = True
     if action == "refresh":
         iface_obj[interface_name].packets_list.clear
-        packet_list.clear()        
+        packet_list.clear()
     if action == "stop":
         print(f"Stopping filter packet capture for {interface_name}...")
         print("Estimated time 20 sec...")

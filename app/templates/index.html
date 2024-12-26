@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -169,9 +170,78 @@
                 </div>
             </div>
         </div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h3 class="card-title">Read Pcap File</h3>
+                <form id="pcapForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Choose a PCAP file:</label>
+                        <input type="file" class="form-control" id="pcapFileInput" accept=".pcap,.pcappng">
+                    </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary" onclick="handleFile()">Upload</button>
+                    </div>
+                    <div class="mb-3">
+                        <button id="readButton" type="button" class="btn btn-primary" onclick="redirectToReader()"
+                            disabled>Read</button>
+                    </div>
+                </form>
+                <p id="selectedFileName" class="text-muted mt-3"></p>
+            </div>
+        </div>
+
+
     </div>
 
     <script>
+        // for reader
+        function redirectToReader() {
+            window.location.href = "/reader"; // Redirect to the /reader page
+        }
+
+        // for files 
+        function handleFile() {
+            const fileInput = document.getElementById("pcapFileInput");
+            const readButton = document.getElementById("readButton");
+
+            const fileNameDisplay = document.getElementById("selectedFileName");
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0]; // Get the selected file
+                const fileName = file.name; // Get the file name
+                fileNameDisplay.textContent = `Selected File: ${fileName}`;
+
+                const formData = new FormData();
+                formData.append("pcapFile", file);
+
+                // Debugging FormData
+                for (let pair of formData.entries()) {
+                    console.log(`${pair[0]}: ${pair[1]}`);
+                }
+
+                fetch("/upload", {
+                    method: "POST",
+                    body: formData,
+                })
+                    .then(response => response.json())  // Ensure that the response is parsed as JSON
+                    .then(data => {
+                        if (data.message) {
+                            readButton.disabled = false
+                            fileNameDisplay.textContent = data.message;
+                        } else if (data.error) {
+                            fileNameDisplay.textContent = data.error;
+                        }
+                        console.log(data); // Log the response data
+                    })
+                    .catch(error => {
+                        fileNameDisplay.textContent = "Error uploading file.";
+                        console.error("Error uploading file", error);
+                    });
+            } else {
+                fileNameDisplay.textContent = "No file selected.";
+            }
+        }
+
         // for filters
         const MAX_PORT = 65535;
 

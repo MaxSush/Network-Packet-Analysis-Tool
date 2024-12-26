@@ -36,14 +36,10 @@ class Interface_Packet:
         self.worker_thread.daemon = True
         self.worker_thread.start()
 
-    def process_filter(self, filter):
-        print(filter)
-        return filter
-
     def get_packets_list(self):
         with self.lock:
             return self.packets_list
-
+    
     def process_pckt(self, pckt):
         with self.lock:
             packet_info = {
